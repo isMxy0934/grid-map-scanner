@@ -67,5 +67,39 @@ class TestGridGenerator(unittest.TestCase):
         # Let's check for a reasonable minimum.
         self.assertTrue(len(grid_points) >= 9)
 
+    def test_generate_macro_grid(self):
+        """Test the generation of a macro-level grid."""
+        test_area = Area(center=Coordinate(34.0, -118.0), radius_km=10.0)
+        grid = self.generator.generate_macro_grid(test_area)
+        self.assertTrue(len(grid) > 0)
+        # Check that level and radius are set correctly
+        self.assertEqual(grid[0].level, 1)
+        self.assertEqual(grid[0].radius, self.config.MACRO_SEARCH_RADIUS)
+
+    def test_generate_fine_grid(self):
+        """Test the generation of a fine-grained grid from hotspots."""
+        hotspot = Area(center=Coordinate(34.0, -118.0), radius_km=1.0)
+        grid = self.generator.generate_fine_grid([hotspot])
+        self.assertTrue(len(grid) > 0)
+        self.assertEqual(grid[0].level, 2)
+        self.assertEqual(grid[0].radius, self.config.FINE_SEARCH_RADIUS)
+
+    def test_generate_enhanced_grid(self):
+        """Test the generation of an enhanced grid for recursion."""
+        extreme_point = GridPoint(center=Coordinate(34.0, -118.0), radius=500, level=2)
+        grid = self.generator.generate_enhanced_grid(extreme_point)
+        self.assertTrue(len(grid) > 0)
+        self.assertEqual(grid[0].level, 3)
+        self.assertEqual(grid[0].radius, 250)
+
+    def test_should_recurse(self):
+        """Test the logic for triggering recursion."""
+        # Should recurse if count is trigger and depth is not maxed
+        self.assertTrue(self.generator.should_recurse(20, 2))
+        # Should not recurse if depth is maxed
+        self.assertFalse(self.generator.should_recurse(20, 3))
+        # Should not recurse if count is not the trigger count
+        self.assertFalse(self.generator.should_recurse(19, 2))
+
 if __name__ == '__main__':
     unittest.main()

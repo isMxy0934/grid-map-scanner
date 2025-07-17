@@ -62,6 +62,54 @@ class GridGenerator:
                 filtered_points.append(point)
         return filtered_points
 
+    def generate_macro_grid(self, target_area: Area) -> List[GridPoint]:
+        """Generates the initial coarse grid for the macro scan."""
+        grid = self._generate_rectangular_grid(target_area, self.config.MACRO_GRID_SPACING)
+        if self.config.ENABLE_BOUNDARY_FILTER:
+            grid = self._filter_grid_by_boundary(grid, target_area)
+        
+        for point in grid:
+            point.level = 1
+            point.radius = self.config.MACRO_SEARCH_RADIUS
+        return grid
+
+    def generate_fine_grid(self, hotspot_areas: List[Area]) -> List[GridPoint]:
+        """Generates a finer grid within the identified hotspot areas."""
+        all_fine_points = []
+        for area in hotspot_areas:
+            grid = self._generate_rectangular_grid(area, self.config.FINE_GRID_SPACING)
+            if self.config.ENABLE_BOUNDARY_FILTER:
+                grid = self._filter_grid_by_boundary(grid, area)
+            
+            for point in grid:
+                point.level = 2
+                point.radius = self.config.FINE_SEARCH_RADIUS
+            all_fine_points.extend(grid)
+        # Deduplicate points in case hotspot areas overlap
+        # A simple approach is to use a dictionary, which preserves order in Python 3.7+
+        return list({f"{p.center.latitude},{p.center.longitude}": p for p in all_fine_points}.values())
+
+    def generate_enhanced_grid(self, extreme_density_point: GridPoint) -> List[GridPoint]:
+        """Generates an even finer grid for a single extreme density point."""
+        # Create a small area around the point for the enhanced scan
+        new_spacing = extreme_density_point.radius * self.config.RECURSION_SPACING_FACTOR / 1000
+        new_radius = int(extreme_density_point.radius * self.config.RECURSION_RADIUS_FACTOR)
+
+        area = Area(center=extreme_density_point.center, radius_km=extreme_density_point.radius / 1000)
+        grid = self._generate_rectangular_grid(area, new_spacing)
+        
+        for point in grid:
+            point.level = extreme_density_point.level + 1
+            point.radius = new_radius
+            
+        return grid
+
+    def should_recurse(self, result_count: int, current_level: int) -> bool:
+        """Determines if a recursive scan should be triggered."""
+        if current_level >= self.config.MAX_RECURSION_DEPTH:
+            return False
+        return result_count == self.config.RECURSION_TRIGGER_COUNT
+
     def _generate_rectangular_grid(self, area: Area, spacing_km: float) -> List[GridPoint]:
         """
         Generates a rectangular grid of points that covers a given circular area.
