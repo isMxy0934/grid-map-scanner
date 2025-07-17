@@ -13,7 +13,7 @@
     - 创建网格生成的单元测试
     - _需求: 1.1, 1.4_
 
-  - [ ] 2.2 实现Haversine距离计算和边界过滤
+  - [x] 2.2 实现Haversine距离计算和边界过滤
     - 编写_haversine_distance方法计算地球表面两点间距离
     - 实现_filter_grid_by_boundary方法进行圆形边界过滤
     - 添加边界缓冲区机制防止边界附近遗漏
