@@ -88,5 +88,46 @@ class TestPlacesAPIClient(unittest.TestCase):
         self.assertEqual(extracted[0].place_id, "test_id_1")
         self.assertEqual(extracted[0].scan_level, 1)
 
+    @patch('corner_store_scanner.places_client.requests.post')
+    @patch('corner_store_scanner.places_client.time.sleep', return_value=None)
+    def test_nearby_search_retry_logic(self, mock_sleep, mock_post):
+        """Test that nearby_search retries on failure."""
+        # Simulate a sequence of failed responses followed by a success
+        mock_post.side_effect = [
+            requests.exceptions.RequestException("Test network error"),
+            requests.exceptions.RequestException("Test network error"),
+            unittest.mock.Mock(status_code=200, json=lambda: {"places": []})
+        ]
+
+        client = PlacesAPIClient(self.config)
+        # The actual grid point data doesn't matter much for this test
+        grid_point = GridPoint(center=Coordinate(0, 0), radius=100, level=1)
+        
+        result = client.nearby_search(grid_point)
+
+        # It should have called post 3 times (2 fails, 1 success)
+        self.assertEqual(mock_post.call_count, 3)
+        # It should have slept twice
+        self.assertEqual(mock_sleep.call_count, 2)
+        # It should eventually succeed
+        self.assertIsNotNone(result)
+
+    @patch('corner_store_scanner.places_client.requests.post')
+    @patch('corner_store_scanner.places_client.time.sleep', return_value=None)
+    def test_nearby_search_all_retries_fail(self, mock_sleep, mock_post):
+        """Test that nearby_search returns None after all retries fail."""
+        # Simulate only failed responses
+        mock_post.side_effect = requests.exceptions.RequestException("Test network error")
+
+        client = PlacesAPIClient(self.config)
+        grid_point = GridPoint(center=Coordinate(0, 0), radius=100, level=1)
+        
+        result = client.nearby_search(grid_point)
+
+        # It should have called post MAX_RETRIES times
+        self.assertEqual(mock_post.call_count, self.config.MAX_RETRIES)
+        # It should return None
+        self.assertIsNone(result)
+
 if __name__ == '__main__':
     unittest.main()

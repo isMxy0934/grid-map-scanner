@@ -2,7 +2,10 @@ import os
 import requests
 import time
 from datetime import datetime
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .models import GridPoint
 from .models import Coordinate, PlaceData
 from .config import ScanConfig
 
@@ -107,3 +110,28 @@ class PlacesAPIClient:
                 )
             )
         return extracted_data
+
+    def nearby_search(self, grid_point: "GridPoint") -> Optional[List[PlaceData]]:
+        """
+        Executes a Nearby Search API call for a given grid point with retry logic.
+
+        Args:
+            grid_point: The GridPoint to search around.
+
+        Returns:
+            A list of PlaceData objects if successful, otherwise None.
+        """
+        for attempt in range(self.config.MAX_RETRIES):
+            try:
+                response = self._make_api_request(grid_point.center, grid_point.radius)
+                return self._extract_places(response.json(), grid_point.id, grid_point.level)
+            except requests.exceptions.RequestException as e:
+                print(f"API request failed (attempt {attempt + 1}/{self.config.MAX_RETRIES}): {e}")
+                if attempt < self.config.MAX_RETRIES - 1:
+                    time.sleep(self.config.RETRY_DELAY * (2 ** attempt)) # Exponential backoff
+                else:
+                    return None # All retries failed
+            except Exception as e:
+                print(f"An unexpected error occurred during API call (attempt {attempt + 1}): {e}")
+                return None
+        return None
