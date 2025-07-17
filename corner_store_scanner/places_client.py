@@ -1,5 +1,7 @@
 import os
 import requests
+import time
+from datetime import datetime
 from typing import Optional, List, Dict
 from .models import Coordinate, PlaceData
 from .config import ScanConfig
@@ -47,3 +49,61 @@ class PlacesAPIClient:
                 }
             }
         }
+
+    def _make_api_request(self, center: Coordinate, radius: int) -> requests.Response:
+        """
+        Makes the actual HTTP POST request to the Google Places API.
+
+        Args:
+            center: The center coordinate for the search.
+            radius: The search radius in meters.
+
+        Returns:
+            The Response object from the requests library.
+        """
+        headers = self._prepare_headers()
+        payload = self._prepare_payload(center, radius)
+        response = requests.post(
+            self.base_url,
+            json=payload,
+            headers=headers,
+            timeout=self.config.API_TIMEOUT
+        )
+        response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
+        return response
+
+    def _extract_places(self, response_data: dict, grid_point_id: str, scan_level: int) -> List[PlaceData]:
+        """
+        Extracts and transforms place data from the API response.
+
+        Args:
+            response_data: The JSON response data from the API.
+            grid_point_id: The ID of the grid point that this search originated from.
+            scan_level: The scan level of the search.
+
+        Returns:
+            A list of PlaceData objects.
+        """
+        places = response_data.get('places', [])
+        extracted_data = []
+        for place in places:
+            # Safely get nested dictionary values
+            postal_address = place.get('postalAddress', {})
+            location = place.get('location', {})
+
+            extracted_data.append(
+                PlaceData(
+                    place_id=place.get('id'),
+                    name=place.get('name'),
+                    formatted_address=place.get('formattedAddress'),
+                    latitude=location.get('latitude'),
+                    longitude=location.get('longitude'),
+                    postal_address=f"{postal_address.get('addressLines', [])}, {postal_address.get('postalCode', '')}, {postal_address.get('locality', '')}",
+                    types=place.get('types', []),
+                    photos=[photo.get('name', '') for photo in place.get('photos', [])],
+                    grid_point_id=grid_point_id,
+                    scan_time=datetime.now().isoformat(),
+                    scan_level=scan_level
+                )
+            )
+        return extracted_data
