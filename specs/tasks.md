@@ -34,7 +34,7 @@
     - 配置API请求的基础参数和头信息
     - _需求: 3.1, 3.3, 3.4_
 
-  - [ ] 3.2 实现API调用和响应处理
+  - [x] 3.2 实现API调用和响应处理
     - 编写_make_api_request方法执行HTTP请求到Google Places API
     - 实现_extract_places方法解析API响应数据
     - 添加响应字段验证和数据清洗逻辑
