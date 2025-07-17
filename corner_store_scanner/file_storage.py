@@ -11,6 +11,9 @@ class LocalFileStorage:
     """
     Handles all disk I/O for saving scan results and progress.
     """
+    data_dir = "data"
+    session_dir = "sessions"
+
     def __init__(self, config: ScanConfig, session_id: str):
         """
         Initializes the LocalFileStorage.
@@ -43,31 +46,59 @@ class LocalFileStorage:
         os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs(self.session_dir, exist_ok=True)
 
+    def get_existing_place_ids(self) -> Set[str]:
+        """
+        Reads the places CSV file and returns a set of all existing place_ids.
+        """
+        if not os.path.isfile(self.places_file):
+            return set()
+        
+        existing_ids = set()
+        with open(self.places_file, 'r', newline='', encoding='utf-8') as f:
+            try:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    if 'place_id' in row:
+                        existing_ids.add(row['place_id'])
+            except (csv.Error, KeyError) as e:
+                # Handle empty or malformed CSV
+                print(f"Warning: Could not read existing place IDs from {self.places_file}. File might be empty or malformed. Error: {e}")
+                return set()
+        return existing_ids
+
     def save_places(self, places: List[PlaceData]):
         """
-        Saves a list of PlaceData objects to the CSV file.
+        Saves a list of new PlaceData objects to the CSV file, avoiding duplicates based on place_id.
         Appends to the file if it already exists.
         """
-        # Check if the file exists to write headers
-        file_exists = os.path.isfile(self.places_file)
+        if not places:
+            return
+
+        existing_place_ids = self.get_existing_place_ids()
+        new_places = [p for p in places if p.place_id not in existing_place_ids]
+
+        if not new_places:
+            return
+
+        file_exists = os.path.isfile(self.places_file) and os.path.getsize(self.places_file) > 0
         
         with open(self.places_file, 'a', newline='', encoding='utf-8') as f:
-            if not places:
-                return
-            # Use the first place's dict keys for header
-            writer = csv.DictWriter(f, fieldnames=places[0].to_csv_row().keys())
+            writer = csv.DictWriter(f, fieldnames=new_places[0].to_csv_row().keys())
             if not file_exists:
                 writer.writeheader()
-            for place in places:
+            
+            for place in new_places:
                 writer.writerow(place.to_csv_row())
 
     def save_progress(self, grid_point_id: str):
         """
-        Records a completed grid point ID. This is a simple append-only log
-        for resuming, not a sophisticated state management system.
+        Records a completed grid point ID to the progress JSON file.
         """
-        with open(self.progress_file, 'a', encoding='utf-8') as f:
-            f.write(f"{grid_point_id}\n")
+        progress_data = self.load_progress()
+        progress_data.add(grid_point_id)
+        
+        with open(self.progress_file, 'w', encoding='utf-8') as f:
+            json.dump(list(progress_data), f, indent=4)
 
     def log_failed_point(self, grid_point: GridPoint, error: str):
         """
@@ -78,41 +109,36 @@ class LocalFileStorage:
 
     def load_progress(self) -> Set[str]:
         """
-        Loads the set of completed grid point IDs from the progress file.
+        Loads the set of completed grid point IDs from the progress JSON file.
 
         Returns:
             A set of strings, where each string is a completed grid point ID.
-            Returns an empty set if the progress file does not exist.
+            Returns an empty set if the progress file does not exist or is invalid.
         """
         if not os.path.isfile(self.progress_file):
             return set()
         
-        with open(self.progress_file, 'r', encoding='utf-8') as f:
-            # Read lines and strip newlines
-            return {line.strip() for line in f if line.strip()}
+        try:
+            with open(self.progress_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    return set(data)
+                return set()
+        except (json.JSONDecodeError, TypeError):
+            # If file is empty, malformed, or not a list, start fresh
+            return set()
 
-    def generate_summary_report(self) -> Dict[str, any]:
+    def generate_summary_report(self, total_places: int, total_api_calls: int, failed_points: int, scan_duration_seconds: float) -> Dict[str, any]:
         """
         Generates a summary report of the scan and saves it to a file.
-
-        Returns:
-            A dictionary containing the summary data.
         """
-        total_places = 0
-        if os.path.isfile(self.places_file):
-            with open(self.places_file, 'r', encoding='utf-8') as f:
-                # Subtract 1 for the header row
-                total_places = max(0, sum(1 for row in f) - 1)
-        
-        failed_points = 0
-        if os.path.isfile(self.failed_log_file):
-            with open(self.failed_log_file, 'r', encoding='utf-8') as f:
-                failed_points = sum(1 for row in f)
-
         summary = {
             "session_id": self.session_id,
             "scan_end_time": datetime.now().isoformat(),
+            "scan_duration_seconds": round(scan_duration_seconds, 2),
             "total_places_found": total_places,
+            "total_api_calls": total_api_calls,
+            "estimated_cost": total_api_calls * self.config.API_COST_PER_CALL,
             "failed_grid_points": failed_points,
             "results_file": self.places_file,
             "progress_file": self.progress_file,

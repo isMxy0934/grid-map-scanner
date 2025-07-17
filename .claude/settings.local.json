@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit:*)",
+      "Bash(git add:*)",
+      "Bash(pytest:*)",
+      "Bash(python3 -m unittest:*)",
+      "Bash(PYTHONPATH=$PYTHONPATH:/Users/mu/Desktop/collection-la-google-map-data pytest:*)"
+    ],
+    "deny": []
+  }
+}

@@ -109,15 +109,15 @@ class ScanSession:
             session_id=data['session_id'],
             target_area=target_area,
             config_snapshot=data['config_snapshot'],
-            created_time=data['created_time'],
-            last_updated=data['last_updated'],
-            current_phase=data['current_phase'],
+            created_time=data.get('created_time', data.get('start_time')),
+            last_updated=data.get('last_updated', data.get('start_time')),
+            current_phase=data.get('current_phase', 'macro'),
             completed_grid_points=set(data.get('completed_grid_points', [])),
             hotspot_areas=hotspot_areas,
             extreme_density_points=extreme_density_points,
-            total_api_calls=data['total_api_calls'],
-            current_cost=data['current_cost'],
-            is_completed=data['is_completed']
+            total_api_calls=data.get('total_api_calls', 0),
+            current_cost=data.get('current_cost', 0.0),
+            is_completed=data.get('is_completed', False)
         )
 
 

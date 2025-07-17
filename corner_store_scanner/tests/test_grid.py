@@ -1,6 +1,6 @@
 import unittest
 import math
-from corner_store_scanner.models import Area, Coordinate
+from corner_store_scanner.models import Area, Coordinate, GridPoint
 from corner_store_scanner.config import ScanConfig
 from corner_store_scanner.grid_generator import GridGenerator
 

@@ -10,9 +10,10 @@ class ScanSessionManager:
     """
     Manages scan sessions, including creation, loading, and state persistence.
     """
+    sessions_dir = "sessions"
+
     def __init__(self, config: ScanConfig):
         self.config = config
-        self.sessions_dir = "sessions"
         self.ensure_sessions_directory()
 
     def ensure_sessions_directory(self):
@@ -34,16 +35,24 @@ class ScanSessionManager:
         session_path = os.path.join(self.sessions_dir, session_id)
         os.makedirs(session_path, exist_ok=True)
         
+        config_dict = self.config.to_dict()
         # Save a snapshot of the current config for this session
         config_snapshot_path = os.path.join(session_path, "config.json")
         with open(config_snapshot_path, 'w', encoding='utf-8') as f:
-            json.dump(self.config.to_dict(), f, indent=4) # Assuming ScanConfig has a to_dict method
+            json.dump(config_dict, f, indent=4)
             
         initial_state = {
             "session_id": session_id,
             "start_time": datetime.now().isoformat(),
             "status": "in_progress",
-            "config_snapshot_file": config_snapshot_path
+            "config_snapshot": config_dict,
+            "target_area": {
+                "center": {
+                    "latitude": self.config.center_latitude,
+                    "longitude": self.config.center_longitude
+                },
+                "radius_km": self.config.scan_radius_km
+            }
         }
         self.save_session_state(session_id, initial_state)
         return initial_state
@@ -73,6 +82,13 @@ class ScanSessionManager:
         if not os.path.exists(self.sessions_dir):
             return []
         return [d for d in os.listdir(self.sessions_dir) if os.path.isdir(os.path.join(self.sessions_dir, d))]
+
+    def session_exists(self, session_id: str) -> bool:
+        """
+        Checks if a session directory exists.
+        """
+        session_path = os.path.join(self.sessions_dir, session_id)
+        return os.path.isdir(session_path)
 
     def check_config_compatibility(self, session_id: str, current_config: ScanConfig) -> bool:
         """

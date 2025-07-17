@@ -12,10 +12,24 @@ class TestFileStorage(unittest.TestCase):
         self.config = ScanConfig()
         self.session_id = "test_session_123"
         self.test_data_dir = "test_data"
+        
+        # Ensure the test_data_dir is clean before starting each test
+        if os.path.exists(self.test_data_dir):
+            shutil.rmtree(self.test_data_dir)
+
         # Override the data_dir for testing purposes
         self.storage = LocalFileStorage(self.config, self.session_id)
         self.storage.data_dir = self.test_data_dir
         self.storage.session_dir = os.path.join(self.test_data_dir, self.session_id)
+        
+        # Rea_initialize file paths within the storage instance after overriding directories
+        self.storage.places_file = os.path.join(self.storage.session_dir, "places_results.csv")
+        self.storage.progress_file = os.path.join(self.storage.session_dir, "progress.json")
+        self.storage.failed_log_file = os.path.join(self.storage.session_dir, "failed.log")
+        self.storage.summary_file = os.path.join(self.storage.session_dir, "scan_summary.json")
+
+        # Ensure directories are created for this specific test run
+        self.storage.ensure_data_directories()
         
     def tearDown(self):
         # Clean up the created test directories and files
@@ -84,16 +98,21 @@ class TestFileStorage(unittest.TestCase):
         with open(self.storage.failed_log_file, 'w') as f:
             f.write("failure1\n") # 1 failed point
 
-        summary = self.storage.generate_summary_report()
+        summary = self.storage.generate_summary_report(
+            total_places=100,
+            total_api_calls=50,
+            failed_points=5,
+            scan_duration_seconds=1234.5
+        )
 
         self.assertTrue(os.path.isfile(self.storage.summary_file))
-        self.assertEqual(summary['total_places_found'], 2)
-        self.assertEqual(summary['failed_grid_points'], 1)
-        self.assertEqual(summary['session_id'], self.session_id)
+        self.assertEqual(summary['total_places_found'], 100)
+        self.assertEqual(summary['total_api_calls'], 50)
+        self.assertEqual(summary['failed_grid_points'], 5)
         
         with open(self.storage.summary_file, 'r') as f:
             report_data = json.load(f)
-            self.assertEqual(report_data['total_places_found'], 2)
+            self.assertEqual(report_data['total_places_found'], 100)
 
 if __name__ == '__main__':
     unittest.main()

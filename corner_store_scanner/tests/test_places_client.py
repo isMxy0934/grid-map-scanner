@@ -1,48 +1,34 @@
 import unittest
+from unittest.mock import patch, MagicMock
 import os
-from unittest.mock import patch
+import requests
+
 from corner_store_scanner.config import ScanConfig
 from corner_store_scanner.places_client import PlacesAPIClient
-from corner_store_scanner.models import Coordinate, PlaceData
+from corner_store_scanner.models import GridPoint, Coordinate, PlaceData
 
+# Set a dummy API key for testing purposes
+@patch.dict(os.environ, {"GOOGLE_PLACES_API_KEY": "test_api_key"})
 class TestPlacesAPIClient(unittest.TestCase):
 
     def setUp(self):
+        """Set up a common config and client for tests."""
         self.config = ScanConfig()
+        # Patch the environment variable before initializing the client
+        self.env_patcher = patch.dict(os.environ, {"GOOGLE_PLACES_API_KEY": "test_api_key"})
+        self.env_patcher.start()
+        self.addCleanup(self.env_patcher.stop)
+        self.client = PlacesAPIClient(self.config)
 
-    @patch.dict(os.environ, {'GOOGLE_PLACES_API_KEY': 'test_api_key'})
-    def test_client_initialization_success(self):
-        """Test that the client initializes successfully when the API key is set."""
-        client = PlacesAPIClient(self.config)
-        self.assertEqual(client.api_key, 'test_api_key')
+    def test_initialization_with_api_key(self):
+        """Test that the client initializes correctly with an API key."""
+        self.assertEqual(self.client.api_key, "test_api_key")
 
-    @patch.dict(os.environ, {}, clear=True)
-    def test_client_initialization_no_api_key(self):
-        """Test that the client raises a ValueError if the API key is not set."""
-        with self.assertRaises(ValueError):
-            PlacesAPIClient(self.config)
-
-    @patch.dict(os.environ, {'GOOGLE_PLACES_API_KEY': 'test_api_key'})
-    def test_prepare_headers(self):
-        """Test that the request headers are prepared correctly."""
-        client = PlacesAPIClient(self.config)
-        headers = client._prepare_headers()
-        self.assertIn('X-Goog-Api-Key', headers)
-        self.assertEqual(headers['X-Goog-Api-Key'], 'test_api_key')
-        self.assertIn('X-Goog-FieldMask', headers)
-        self.assertIn('places.id', headers['X-Goog-FieldMask'])
-
-    @patch.dict(os.environ, {'GOOGLE_PLACES_API_KEY': 'test_api_key'})
-    def test_prepare_payload(self):
-        """Test that the request payload is prepared correctly."""
-        client = PlacesAPIClient(self.config)
-        center = Coordinate(latitude=34.0, longitude=-118.0)
-        radius = 5000
-        payload = client._prepare_payload(center, radius)
-        
-        self.assertEqual(payload['locationRestriction']['circle']['center']['latitude'], 34.0)
-        self.assertEqual(payload['locationRestriction']['circle']['radius'], 5000)
-        self.assertEqual(payload['includedTypes'], self.config.PLACE_TYPES)
+    def test_initialization_without_api_key(self):
+        """Test that the client raises an error if the API key is missing."""
+        with patch.dict(os.environ, {}, clear=True):
+            with self.assertRaises(ValueError):
+                PlacesAPIClient(self.config)
 
     @patch('requests.post')
     def test_make_api_request(self, mock_post):

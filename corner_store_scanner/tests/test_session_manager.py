@@ -53,7 +53,7 @@ class TestScanSessionManager(unittest.TestCase):
 
         self.assertEqual(session_state["session_id"], session_id)
         self.assertEqual(session_state["status"], "in_progress")
-        self.assertIn("config_snapshot_file", session_state)
+        self.assertIn("config_snapshot", session_state)
         
         # Verify saved config snapshot
         with open(os.path.join(session_path, "config.json"), 'r') as f:
