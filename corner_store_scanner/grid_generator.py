@@ -13,6 +13,55 @@ class GridGenerator:
         """
         self.config = config
 
+    def _haversine_distance(self, coord1: Coordinate, coord2: Coordinate) -> float:
+        """
+        Calculates the great-circle distance between two points on the earth (specified in decimal degrees)
+        using the Haversine formula.
+        
+        Args:
+            coord1: The first coordinate.
+            coord2: The second coordinate.
+            
+        Returns:
+            The distance in kilometers.
+        """
+        # Earth radius in kilometers
+        R = 6371.0
+        
+        lat1_rad = math.radians(coord1.latitude)
+        lon1_rad = math.radians(coord1.longitude)
+        lat2_rad = math.radians(coord2.latitude)
+        lon2_rad = math.radians(coord2.longitude)
+        
+        dlon = lon2_rad - lon1_rad
+        dlat = lat2_rad - lat1_rad
+        
+        a = math.sin(dlat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        
+        distance = R * c
+        return distance
+
+    def _filter_grid_by_boundary(self, grid_points: List[GridPoint], target_area: Area) -> List[GridPoint]:
+        """
+        Filters a list of grid points, keeping only those within the circular target area.
+        
+        Args:
+            grid_points: The list of GridPoint objects to filter.
+            target_area: The circular Area defining the boundary.
+            
+        Returns:
+            A new list of GridPoint objects that are within the boundary.
+        """
+        filtered_points = []
+        # Add a buffer to the radius to ensure we don't miss points on the very edge
+        effective_radius = target_area.radius_km + self.config.BOUNDARY_BUFFER_KM
+        for point in grid_points:
+            distance = self._haversine_distance(target_area.center, point.center)
+            if distance <= effective_radius:
+                filtered_points.append(point)
+        return filtered_points
+
     def _generate_rectangular_grid(self, area: Area, spacing_km: float) -> List[GridPoint]:
         """
         Generates a rectangular grid of points that covers a given circular area.

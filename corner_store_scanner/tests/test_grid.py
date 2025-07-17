@@ -11,6 +11,33 @@ class TestGridGenerator(unittest.TestCase):
         self.config = ScanConfig()
         self.generator = GridGenerator(self.config)
 
+    def test_haversine_distance(self):
+        """Test the Haversine distance calculation between two points."""
+        # Coordinates for Los Angeles and San Francisco
+        la = Coordinate(34.0522, -118.2437)
+        sf = Coordinate(37.7749, -122.4194)
+        # Known distance is approx 559 km
+        distance = self.generator._haversine_distance(la, sf)
+        self.assertAlmostEqual(distance, 559, delta=1)
+
+    def test_boundary_filter(self):
+        """Test the boundary filter to ensure it removes points outside the radius."""
+        center_point = Coordinate(latitude=34.0, longitude=-118.0)
+        test_area = Area(center=center_point, radius_km=1.0)
+        
+        # A point inside the radius
+        inside_point = GridPoint(center=Coordinate(34.001, -118.001), radius=100, level=1)
+        # A point far outside the radius
+        outside_point = GridPoint(center=Coordinate(34.1, -118.1), radius=100, level=1)
+        
+        points = [inside_point, outside_point]
+        
+        filtered = self.generator._filter_grid_by_boundary(points, test_area)
+        
+        self.assertEqual(len(filtered), 1)
+        self.assertIn(inside_point, filtered)
+        self.assertNotIn(outside_point, filtered)
+
     def test_generate_rectangular_grid_creates_points(self):
         """
         Test that _generate_rectangular_grid creates a list of grid points.
@@ -30,7 +57,8 @@ class TestGridGenerator(unittest.TestCase):
         self.assertTrue(len(grid_points) > 0)
         
         # Check that the points are of the correct type
-        self.assertIsInstance(grid_points[0], unittest.mock.ANY.__class__) # A bit of a hack as GridPoint is not available here
+        from corner_store_scanner.models import GridPoint
+        self.assertIsInstance(grid_points[0], GridPoint)
         
         # A simple sanity check on the number of points.
         # For a 1km radius and 0.5km spacing, we expect a 3x3 or 4x4 grid at least.
