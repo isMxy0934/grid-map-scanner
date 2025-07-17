@@ -1,6 +1,6 @@
 # 实施计划
 
-- [ ] 1. 创建项目结构和核心数据模型
+- [x] 1. 创建项目结构和核心数据模型
   - 建立项目目录结构，包含所有必要的模块文件
   - 实现核心数据类：Coordinate, GridPoint, Area, PlaceData, ScanSession, ScanResult
   - 创建配置类ScanConfig，包含所有可配置参数
