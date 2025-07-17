@@ -41,14 +41,6 @@ class TestIntegration(unittest.TestCase):
         self.session_dir_patcher.start()
         self.addCleanup(self.session_dir_patcher.stop)
 
-        self.session_dir_patcher = patch.object(LocalFileStorage, 'session_dir', os.path.join(self.test_data_dir, 'sessions'))
-        self.session_dir_patcher.start()
-        self.addCleanup(self.session_dir_patcher.stop)
-
-        self.session_dir_patcher = patch.object(LocalFileStorage, 'session_dir', os.path.join(self.test_data_dir, 'sessions'))
-        self.session_dir_patcher.start()
-        self.addCleanup(self.session_dir_patcher.stop)
-
     def tearDown(self):
         """Clean up the test data directory after each test."""
         if os.path.exists(self.test_data_dir):
