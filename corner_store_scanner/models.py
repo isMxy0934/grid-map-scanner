@@ -18,7 +18,11 @@ class GridPoint:
     id: str = field(init=False)
 
     def __post_init__(self):
-        self.id = f"grid_{self.level}_{self.center.latitude}_{self.center.longitude}"
+        self.update_id()
+
+    def update_id(self) -> None:
+        """Regenerate the grid point identifier."""
+        self.id = f"grid_{self.level}_{self.center.latitude}_{self.center.longitude}_{self.radius}"
 
 @dataclass
 class Area:

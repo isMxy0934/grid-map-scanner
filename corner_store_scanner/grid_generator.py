@@ -71,6 +71,7 @@ class GridGenerator:
         for point in grid:
             point.level = 1
             point.radius = self.config.MACRO_SEARCH_RADIUS
+            point.update_id()
         return grid
 
     def generate_fine_grid(self, hotspot_areas: List[Area]) -> List[GridPoint]:
@@ -84,6 +85,7 @@ class GridGenerator:
             for point in grid:
                 point.level = 2
                 point.radius = self.config.FINE_SEARCH_RADIUS
+                point.update_id()
             all_fine_points.extend(grid)
         # Deduplicate points in case hotspot areas overlap
         # A simple approach is to use a dictionary, which preserves order in Python 3.7+
@@ -101,7 +103,8 @@ class GridGenerator:
         for point in grid:
             point.level = extreme_density_point.level + 1
             point.radius = new_radius
-            
+            point.update_id()
+
         return grid
 
     def should_recurse(self, result_count: int, current_level: int) -> bool:
