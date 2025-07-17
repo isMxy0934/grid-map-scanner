@@ -105,12 +105,8 @@ class MainScanner:
 
             logger.info(f"Processing macro grid point {i + 1}/{len(macro_grid_points)}: {grid_point.id}")
             
-            places, api_calls_made = self.places_client.nearby_search(
-                latitude=grid_point.center.latitude,
-                longitude=grid_point.center.longitude,
-                radius=grid_point.radius,
-            )
-            self.api_call_count += api_calls_made
+            places = self.places_client.nearby_search(grid_point)
+            self.api_call_count += 1
 
             if places:
                 for p in places:
@@ -168,12 +164,8 @@ class MainScanner:
 
             logger.info(f"Processing fine grid point {i + 1}/{len(all_fine_grid_points)}: {grid_point.id}")
 
-            places, api_calls_made = self.places_client.nearby_search(
-                latitude=grid_point.center.latitude,
-                longitude=grid_point.center.longitude,
-                radius=grid_point.radius,
-            )
-            self.api_call_count += api_calls_made
+            places = self.places_client.nearby_search(grid_point)
+            self.api_call_count += 1
 
             if places:
                 for p in places:
@@ -244,12 +236,8 @@ class MainScanner:
 
             logger.info(f"Processing enhanced grid point {i + 1}/{len(enhanced_grid)} at depth {current_depth}: {sub_point.id}")
             
-            places, api_calls_made = self.places_client.nearby_search(
-                latitude=sub_point.center.latitude,
-                longitude=sub_point.center.longitude,
-                radius=sub_point.radius,
-            )
-            self.api_call_count += api_calls_made
+            places = self.places_client.nearby_search(sub_point)
+            self.api_call_count += 1
 
             if places:
                 for p in places:
