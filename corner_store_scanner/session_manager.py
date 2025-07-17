@@ -52,7 +52,14 @@ class ScanSessionManager:
                     "longitude": self.config.center_longitude
                 },
                 "radius_km": self.config.scan_radius_km
-            }
+            },
+            "completed_grid_points": [],
+            "hotspot_areas": [],
+            "extreme_density_points": [],
+            "total_api_calls": 0,
+            "total_places_found": 0,
+            "current_cost": 0.0,
+            "is_completed": False
         }
         self.save_session_state(session_id, initial_state)
         return initial_state

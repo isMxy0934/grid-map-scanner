@@ -68,6 +68,7 @@ class ScanSession:
     hotspot_areas: List[Area] = field(default_factory=list)
     extreme_density_points: List[GridPoint] = field(default_factory=list)
     total_api_calls: int = 0
+    total_places_found: int = 0
     current_cost: float = 0.0
     is_completed: bool = False
 
@@ -88,6 +89,7 @@ class ScanSession:
             'hotspot_areas': [{'center': {'latitude': area.center.latitude, 'longitude': area.center.longitude}, 'radius_km': area.radius_km, 'name': area.name} for area in self.hotspot_areas],
             'extreme_density_points': [{'id': point.id, 'center': {'latitude': point.center.latitude, 'longitude': point.center.longitude}, 'radius': point.radius, 'level': point.level} for point in self.extreme_density_points],
             'total_api_calls': self.total_api_calls,
+            'total_places_found': self.total_places_found,
             'current_cost': self.current_cost,
             'is_completed': self.is_completed
         }
@@ -116,6 +118,7 @@ class ScanSession:
             hotspot_areas=hotspot_areas,
             extreme_density_points=extreme_density_points,
             total_api_calls=data.get('total_api_calls', 0),
+            total_places_found=data.get('total_places_found', 0),
             current_cost=data.get('current_cost', 0.0),
             is_completed=data.get('is_completed', False)
         )

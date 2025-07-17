@@ -87,17 +87,17 @@ class TestIntegration(unittest.TestCase):
 
         # Set the side_effect to return different values on subsequent calls
         mock_nearby_search.side_effect = [
-            (mock_hotspot_response, 1), # First macro call is a hotspot
-            (mock_normal_response, 1),  # Other macro calls are normal
-            (mock_normal_response, 1),
-            (mock_normal_response, 1),
-            (mock_extreme_density_response, 1), # First fine call is extreme density
-            (mock_normal_response, 1), # Other fine calls are normal
-            (mock_enhanced_response, 1), # The enhanced (recursive) call
-            (mock_normal_response, 1), # Subsequent calls
-            (mock_normal_response, 1),
-            (mock_normal_response, 1),
-        ] * 200 # Repeat to ensure we don't run out of mocks
+            mock_hotspot_response,  # First macro call is a hotspot
+            mock_normal_response,  # Other macro calls are normal
+            mock_normal_response,
+            mock_normal_response,
+            mock_extreme_density_response,  # First fine call is extreme density
+            mock_normal_response,  # Other fine calls are normal
+            mock_enhanced_response,  # The enhanced (recursive) call
+            mock_normal_response,  # Subsequent calls
+            mock_normal_response,
+            mock_normal_response,
+        ] * 200  # Repeat to ensure we don't run out of mocks
 
         # --- Phase 1: Run the initial scan ---
         scanner = MainScanner(config=self.config)

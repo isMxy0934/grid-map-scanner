@@ -24,10 +24,10 @@ class LocalFileStorage:
         """
         self.config = config
         self.session_id = session_id
-        
-        # Define base data directory
-        self.data_dir = "data"
-        
+
+        # Use class-level defaults so tests can override via patching
+        self.data_dir = self.__class__.data_dir
+
         # Define session-specific directory
         self.session_dir = os.path.join(self.data_dir, self.session_id)
         
