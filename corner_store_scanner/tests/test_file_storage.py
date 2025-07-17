@@ -1,9 +1,10 @@
 import unittest
 import os
 import shutil
+import json
 from corner_store_scanner.config import ScanConfig
 from corner_store_scanner.file_storage import LocalFileStorage
-from corner_store_scanner.models import PlaceData
+from corner_store_scanner.models import PlaceData, GridPoint, Coordinate
 
 class TestFileStorage(unittest.TestCase):
 
@@ -60,6 +61,39 @@ class TestFileStorage(unittest.TestCase):
         self.assertTrue(os.path.isfile(self.storage.failed_log_file))
         with open(self.storage.failed_log_file, 'r') as f:
             self.assertIn(f"{point.id} - Test Error", f.read())
+
+    def test_load_progress(self):
+        """Test loading progress from a file."""
+        # First, save some progress
+        self.storage.save_progress("grid1")
+        self.storage.save_progress("grid2")
+        
+        progress_set = self.storage.load_progress()
+        self.assertEqual(progress_set, {"grid1", "grid2"})
+
+    def test_load_progress_no_file(self):
+        """Test loading progress when the file doesn't exist."""
+        progress_set = self.storage.load_progress()
+        self.assertEqual(progress_set, set())
+
+    def test_generate_summary_report(self):
+        """Test the generation of the final summary report."""
+        # Create some dummy files to be summarized
+        with open(self.storage.places_file, 'w') as f:
+            f.write("header\nline1\nline2") # 3 lines = 2 places
+        with open(self.storage.failed_log_file, 'w') as f:
+            f.write("failure1\n") # 1 failed point
+
+        summary = self.storage.generate_summary_report()
+
+        self.assertTrue(os.path.isfile(self.storage.summary_file))
+        self.assertEqual(summary['total_places_found'], 2)
+        self.assertEqual(summary['failed_grid_points'], 1)
+        self.assertEqual(summary['session_id'], self.session_id)
+        
+        with open(self.storage.summary_file, 'r') as f:
+            report_data = json.load(f)
+            self.assertEqual(report_data['total_places_found'], 2)
 
 if __name__ == '__main__':
     unittest.main()
