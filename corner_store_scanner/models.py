@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Set, Optional, Dict
+from typing import List, Set, Dict
 from datetime import datetime
 
 @dataclass
@@ -144,3 +144,14 @@ class ScanResult:
             'session_id': self.session_id,
             'cost_per_place': self.total_cost / max(self.total_places_found, 1)
         }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> 'ScanResult':
+        return cls(
+            total_places_found=data['total_places_found'],
+            total_api_calls=data['total_api_calls'],
+            total_cost=data['total_cost'],
+            failed_grid_points=data['failed_grid_points'],
+            scan_duration=data['scan_duration'],
+            session_id=data['session_id'],
+        )

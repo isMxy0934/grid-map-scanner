@@ -71,9 +71,11 @@ python -m corner_store_scanner.main --run --center "34.0522,-118.2437" --radius 
     cd corner-store-scanner
     ```
 
-2.  **Install dependencies:**
+2.  **Install the package:**
     ```bash
-    pip install -r requirements.txt
+    pip install .
+    # or, if you have uv installed
+    uv pip install -e .
     ```
 
 3.  **Set the API Key:**
