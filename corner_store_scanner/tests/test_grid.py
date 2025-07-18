@@ -75,6 +75,7 @@ class TestGridGenerator(unittest.TestCase):
         # Check that level and radius are set correctly
         self.assertEqual(grid[0].level, 1)
         self.assertEqual(grid[0].radius, self.config.MACRO_SEARCH_RADIUS)
+        self.assertTrue(grid[0].id.startswith("grid_1_"))
 
     def test_generate_fine_grid(self):
         """Test the generation of a fine-grained grid from hotspots."""
@@ -83,6 +84,7 @@ class TestGridGenerator(unittest.TestCase):
         self.assertTrue(len(grid) > 0)
         self.assertEqual(grid[0].level, 2)
         self.assertEqual(grid[0].radius, self.config.FINE_SEARCH_RADIUS)
+        self.assertTrue(grid[0].id.startswith("grid_2_"))
 
     def test_generate_enhanced_grid(self):
         """Test the generation of an enhanced grid for recursion."""
@@ -91,6 +93,7 @@ class TestGridGenerator(unittest.TestCase):
         self.assertTrue(len(grid) > 0)
         self.assertEqual(grid[0].level, 3)
         self.assertEqual(grid[0].radius, 250)
+        self.assertTrue(grid[0].id.startswith("grid_3_"))
 
     def test_should_recurse(self):
         """Test the logic for triggering recursion."""
